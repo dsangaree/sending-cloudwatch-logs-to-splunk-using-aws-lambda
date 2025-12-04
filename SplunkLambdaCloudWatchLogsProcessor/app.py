@@ -147,8 +147,8 @@ def lambda_handler(event, context):
             try:
                 r = requests.post(raw_url, headers=authHeader, data=records, verify=verify_ssl, timeout=request_timeout)
             except requests.exceptions.RequestException as e:
-                print("Connection Error")
-                print("HTTP Response Code:",e)
+                print(f"Connection Error: {str(e)}")
+                raise ConnectionError(str(e)) from e
             else:
                 if r.status_code == 200:
                     response = json.loads(r.text)
@@ -171,20 +171,22 @@ def lambda_handler(event, context):
                         print(response)
                 else:
                     print("Connection Error")
-                    print(r)
+                    print("HTTP Response:",r)
+                    raise ConnectionError(f"HTTP Response: {str(r)}")
 
         else:
             try:
                 r = requests.post(raw_url, headers=authHeader, data=records, verify=verify_ssl, timeout=request_timeout)
             except requests.exceptions.RequestException as e:
-                print("Connection Error")
-                print("HTTP Response Code:",e)
+                print(f"Connection Error: {str(e)}")
+                raise ConnectionError(str(e)) from e
             else:
                 if r.status_code == 200:
                     print("Ingestion Success: Without Acknowledgement")
                 else:
                     print("Connection Error")
-                    print(r)
+                    print("HTTP Response:",r)
+                    raise ConnectionError(f"HTTP Response: {str(r)}")
     if os.environ['HEC_ENDPOINT_TYPE'] == 'event':  
         event_url=url+'/event'
         authHeader['X-Splunk-Request-Channel'] = channel   
@@ -206,8 +208,8 @@ def lambda_handler(event, context):
             try:
                 r = requests.post(event_url, headers=authHeader, data=ingest_data, verify=verify_ssl, timeout=request_timeout)
             except requests.exceptions.RequestException as e:
-                print("Connection Error")
-                print("HTTP Response Code:",e)
+                print(f"Connection Error: {str(e)}")
+                raise ConnectionError(str(e)) from e
             else:
                 if r.status_code == 200:
                     response = json.loads(r.text)
@@ -230,20 +232,22 @@ def lambda_handler(event, context):
                         print(response)
                 else:
                     print("Connection Error")
-                    print("HTTP Response Code:",r)
+                    print("HTTP Response:",r)
+                    raise ConnectionError(f"HTTP Response: {str(r)}")
 
         else:
             try:
                 r = requests.post(event_url, headers=authHeader, data=ingest_data, verify=verify_ssl, timeout=request_timeout)
             except requests.exceptions.RequestException as e:
-                print("Connection Error")
-                print("HTTP Response Code:",e)
+                print(f"Connection Error: {str(e)}")
+                raise ConnectionError(str(e)) from e
             else:
                 if r.status_code == 200:
                     print("Ingestion Success: Without Acknowledgement")     
                 else:
                     print("Connection Error")
-                    print("HTTP Response Code:",r)
+                    print("HTTP Response:",r)
+                    raise ConnectionError(f"HTTP Response: {str(r)}")
 
 
 
