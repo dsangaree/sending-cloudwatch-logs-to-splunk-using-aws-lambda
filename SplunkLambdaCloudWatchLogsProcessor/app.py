@@ -97,8 +97,8 @@ def processRecords(records):
         return False
 
 # Splunk Acknowledgement function if acknowledgement is enabled with retries
-def splunk_ack(url,channel,ack_json,cookies):
-    ack_url = url+'/ack?channel='+channel
+def splunk_ack(_url,channel,ack_json,cookies):
+    ack_url = _url+'/ack?channel='+channel
     retries = 0
     ack_retries = int(os.environ['ACK_RETRIES'])
     print("Ack Json",ack_json)
@@ -106,28 +106,28 @@ def splunk_ack(url,channel,ack_json,cookies):
         try:
             a = requests.post(ack_url, headers=authHeader, json=ack_json, verify=verify_ssl, cookies=cookies, timeout=request_timeout)
         except requests.exceptions.RequestException as e:
-            return "Connection Error"
+            print(f"Non-fatal Connection Error in splunk_ack(): {str(e)}")
+            return False
         else:
             if a.status_code != 200:
                 retries +=1 
                 continue
             else:
                 a_response = json.loads(a.text)
-            if a_response['acks'][str(ack_json['acks'][0])] == True:
+            if a_response['acks'][str(ack_json['acks'][0])] is True:
                 print("Ack Response:",a_response)
                 return True
             else:
                 retries +=1
-    if retries >= ack_retries:
-        # Troubleshooting
-        if os.environ['DEBUG_DATA'].lower() == "true":
-            print("*********************Acknowledgement Debug Data*********************")            
-            print("Ack Retries:",ack_retries)                
-            print("Retry count:",retries)
-            print("Ack HTTP Status Code:",a.status_code)
-            print("Ack Response:",a_response)
-            print("********************************************************************") 
-        return False
+    # Troubleshooting
+    if os.environ['DEBUG_DATA'].lower() == "true":
+        print("*********************Acknowledgement Debug Data*********************")            
+        print("Ack Retries:",ack_retries)                
+        print("Retry count:",retries)
+        print("Ack HTTP Status Code:",a.status_code)
+        print("Ack Response:",a_response)
+        print("********************************************************************") 
+    return False
 
 
 def lambda_handler(event, context):
@@ -162,7 +162,7 @@ def lambda_handler(event, context):
                             cookies = ""                        
                         time.sleep(ack_wait_secs)
                         ack = splunk_ack(url,channel,ack_json,cookies)                                                    
-                        if ack:
+                        if ack is True:
                             print("Ingestion Success: With Acknowledgement")
                         else:
                             print("Acknowledgement Failed")                                
@@ -223,7 +223,7 @@ def lambda_handler(event, context):
                             cookies = ""                        
                         time.sleep(ack_wait_secs)
                         ack = splunk_ack(url,channel,ack_json,cookies)                                                    
-                        if ack:
+                        if ack is True:
                             print("Ingestion Success: With Acknowledgement")
                         else:
                             print("Acknowledge Failed")                                
