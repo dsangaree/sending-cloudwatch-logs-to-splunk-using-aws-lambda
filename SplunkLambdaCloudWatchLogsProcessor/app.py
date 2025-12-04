@@ -107,16 +107,17 @@ def splunk_ack(url,channel,ack_json,cookies):
             a = requests.post(ack_url, headers=authHeader, json=ack_json, verify=verify_ssl, cookies=cookies, timeout=request_timeout)
         except requests.exceptions.RequestException as e:
             return "Connection Error"
-        if a.status_code != 200:
-            retries +=1 
-            continue
         else:
-            a_response = json.loads(a.text)
-        if a_response['acks'][str(ack_json['acks'][0])] == True:
-            print("Ack Response:",a_response)
-            return True
-        else:
-            retries +=1
+            if a.status_code != 200:
+                retries +=1 
+                continue
+            else:
+                a_response = json.loads(a.text)
+            if a_response['acks'][str(ack_json['acks'][0])] == True:
+                print("Ack Response:",a_response)
+                return True
+            else:
+                retries +=1
     if retries >= ack_retries:
         # Troubleshooting
         if os.environ['DEBUG_DATA'].lower() == "true":
@@ -148,28 +149,29 @@ def lambda_handler(event, context):
             except requests.exceptions.RequestException as e:
                 print("Connection Error")
                 print("HTTP Response Code:",e)
-            if r.status_code == 200:
-                response = json.loads(r.text)
-                if response['text'] == 'Success':
-                    ack_json = {"acks":[response['ackId']]}
-                    # Check if ELB Cookies are set
-                    if len(cookie_name.strip()) > 0:
-                        cookies = {cookie_name: (r.headers['Set-Cookie'].split(";")[0]).split("=")[1]}
-                        print("response cookie",cookies)
-                    else:
-                        cookies = ""                        
-                    time.sleep(ack_wait_secs)
-                    ack = splunk_ack(url,channel,ack_json,cookies)                                                    
-                    if ack:
-                        print("Ingestion Success: With Acknowledgement")
-                    else:
-                        print("Acknowledgement Failed")                                
-                if response['text'] != 'Success':
-                    print("Ingestion failed")
-                    print(response)
             else:
-                print("Connection Error")
-                print(r)
+                if r.status_code == 200:
+                    response = json.loads(r.text)
+                    if response['text'] == 'Success':
+                        ack_json = {"acks":[response['ackId']]}
+                        # Check if ELB Cookies are set
+                        if len(cookie_name.strip()) > 0:
+                            cookies = {cookie_name: (r.headers['Set-Cookie'].split(";")[0]).split("=")[1]}
+                            print("response cookie",cookies)
+                        else:
+                            cookies = ""                        
+                        time.sleep(ack_wait_secs)
+                        ack = splunk_ack(url,channel,ack_json,cookies)                                                    
+                        if ack:
+                            print("Ingestion Success: With Acknowledgement")
+                        else:
+                            print("Acknowledgement Failed")                                
+                    if response['text'] != 'Success':
+                        print("Ingestion failed")
+                        print(response)
+                else:
+                    print("Connection Error")
+                    print(r)
 
         else:
             try:
@@ -177,11 +179,12 @@ def lambda_handler(event, context):
             except requests.exceptions.RequestException as e:
                 print("Connection Error")
                 print("HTTP Response Code:",e)
-            if r.status_code == 200:
-               print("Ingestion Success: Without Acknowledgement")     
             else:
-                print("Connection Error")
-                print(r)
+                if r.status_code == 200:
+                    print("Ingestion Success: Without Acknowledgement")
+                else:
+                    print("Connection Error")
+                    print(r)
     if os.environ['HEC_ENDPOINT_TYPE'] == 'event':  
         event_url=url+'/event'
         authHeader['X-Splunk-Request-Channel'] = channel   
@@ -205,28 +208,29 @@ def lambda_handler(event, context):
             except requests.exceptions.RequestException as e:
                 print("Connection Error")
                 print("HTTP Response Code:",e)
-            if r.status_code == 200:
-                response = json.loads(r.text)
-                if response['text'] == 'Success':
-                    ack_json = {"acks":[response['ackId']]}
-                    # Check if ELB Cookies are set
-                    if len(cookie_name.strip()) > 0:
-                        cookies = {cookie_name: (r.headers['Set-Cookie'].split(";")[0]).split("=")[1]}
-                        print("response cookie",cookies)
-                    else:
-                        cookies = ""                        
-                    time.sleep(ack_wait_secs)
-                    ack = splunk_ack(url,channel,ack_json,cookies)                                                    
-                    if ack:
-                        print("Ingestion Success: With Acknowledgement")
-                    else:
-                        print("Acknowledge Failed")                                
-                if response['text'] != 'Success':
-                    print("Ingestion failed")
-                    print(response)
             else:
-                print("Connection Error")
-                print("HTTP Response Code:",r)
+                if r.status_code == 200:
+                    response = json.loads(r.text)
+                    if response['text'] == 'Success':
+                        ack_json = {"acks":[response['ackId']]}
+                        # Check if ELB Cookies are set
+                        if len(cookie_name.strip()) > 0:
+                            cookies = {cookie_name: (r.headers['Set-Cookie'].split(";")[0]).split("=")[1]}
+                            print("response cookie",cookies)
+                        else:
+                            cookies = ""                        
+                        time.sleep(ack_wait_secs)
+                        ack = splunk_ack(url,channel,ack_json,cookies)                                                    
+                        if ack:
+                            print("Ingestion Success: With Acknowledgement")
+                        else:
+                            print("Acknowledge Failed")                                
+                    if response['text'] != 'Success':
+                        print("Ingestion failed")
+                        print(response)
+                else:
+                    print("Connection Error")
+                    print("HTTP Response Code:",r)
 
         else:
             try:
@@ -234,11 +238,12 @@ def lambda_handler(event, context):
             except requests.exceptions.RequestException as e:
                 print("Connection Error")
                 print("HTTP Response Code:",e)
-            if r.status_code == 200:
-               print("Ingestion Success: Without Acknowledgement")     
             else:
-                print("Connection Error")
-                print("HTTP Response Code:",r)
+                if r.status_code == 200:
+                    print("Ingestion Success: Without Acknowledgement")     
+                else:
+                    print("Connection Error")
+                    print("HTTP Response Code:",r)
 
 
 
